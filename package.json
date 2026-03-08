@@ -1,0 +1,16 @@
+{
+  "type": "module",
+  "bin": {
+    "mm": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node --env-file=.env dist/index.js",
+    "dev": "node --env-file=.env --import tsx/esm src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.3",
+    "tsx": "^4.19.3",
+    "typescript": "^5.9.3"
+  }
+}
