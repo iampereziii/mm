@@ -63,6 +63,7 @@ npm run dev -- list /
 
 # Get a node as JSON with depth 2
 npm run dev -- get /website 2
+#  npm run dev -- get /enterogermina-gold-br/pt-br/saude-intestinal/flora-intestinal/bacterias-boas
 
 # Pretty-print a node tree
 npm run dev -- print /website/home

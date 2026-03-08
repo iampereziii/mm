@@ -23,3 +23,16 @@ export async function getChildren(nodePath: string): Promise<MagnoliaNode[]> {
   const node = await getNode(nodePath, { depth: 1 });
   return node.nodes;
 }
+
+function collectComponents(node: MagnoliaNode, result: MagnoliaNode[]): void {
+  if (node.type === "mgnl:component") result.push(node);
+  if (!Array.isArray(node.nodes)) return;
+  for (const child of node.nodes) collectComponents(child, result);
+}
+
+export async function getComponents(nodePath: string): Promise<MagnoliaNode[]> {
+  const node = await getNode(nodePath, { depth: 10 });
+  const result: MagnoliaNode[] = [];
+  collectComponents(node, result);
+  return result;
+}
