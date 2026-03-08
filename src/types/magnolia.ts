@@ -16,7 +16,7 @@ export interface NodeProperty {
   name: string;
   type: PropertyType;
   multiple: boolean;
-  value: string | string[];
+  values: string[];
 }
 
 export interface MagnoliaNode {

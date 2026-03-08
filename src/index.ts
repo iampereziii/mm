@@ -1,5 +1,5 @@
 import { writeFile } from "node:fs/promises";
-import { getNode, getChildren, getComponents } from "./api/nodes.js";
+import { getNode, getChildren, getComponents, getPageSchema } from "./api/nodes.js";
 import type { MagnoliaNode } from "./types/magnolia.js";
 
 const [, , command, nodePath = "/", ...rest] = process.argv;
@@ -8,7 +8,7 @@ function printNode(node: MagnoliaNode, indent = 0): void {
   const pad = "  ".repeat(indent);
   console.log(`${pad}[${node.type}] ${node.path}`);
   for (const prop of node.properties) {
-    const val = Array.isArray(prop.value) ? prop.value.join(", ") : prop.value;
+    const val = prop.values.length === 1 ? prop.values[0] : prop.values.join(", ");
     console.log(`${pad}  ${prop.name}: ${val}`);
   }
 }
@@ -37,6 +37,14 @@ async function main(): Promise<void> {
       for (const child of node.nodes) printNode(child, 1);
       break;
     }
+    case "schema": {
+      const schema = await getPageSchema(nodePath);
+      const json = JSON.stringify(schema, null, 2);
+      await writeFile("schema.json", json, "utf-8");
+      const total = Object.values(schema.areas).reduce((n, a) => n + a.components.length, 0);
+      console.error(`Wrote schema with ${Object.keys(schema.areas).length} areas, ${total} top-level components to schema.json`);
+      break;
+    }
     case "components": {
       const components = await getComponents(nodePath);
       const json = JSON.stringify(components, null, 2);
@@ -49,6 +57,7 @@ async function main(): Promise<void> {
   mm get        <path> [depth]   Fetch node as JSON (default depth 0)
   mm list       <path>           List immediate children
   mm print      <path> [depth]   Pretty-print node tree (default depth 1)
+  mm schema     <path>           Export page as recreatable schema (writes to schema.json)
   mm components <path>           List all mgnl:component nodes on a page (writes to response.json)
 
 Environment variables (.env):

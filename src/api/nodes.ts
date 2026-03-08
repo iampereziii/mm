@@ -1,4 +1,6 @@
 import type { MagnoliaNode } from "../types/magnolia.js";
+import type { PageSchema } from "../types/schema.js";
+import { buildPageSchema } from "../schema.js";
 import { apiFetch } from "./client.js";
 
 const WORKSPACE = "website";
@@ -7,6 +9,7 @@ export interface GetNodeOptions {
   depth?: number;
   excludeNodeTypes?: string[];
   nodeTypes?: string[];
+  includeMetadata?: boolean;
 }
 
 export function getNode(nodePath: string, options: GetNodeOptions = {}): Promise<MagnoliaNode> {
@@ -14,6 +17,7 @@ export function getNode(nodePath: string, options: GetNodeOptions = {}): Promise
   if (options.depth !== undefined) params["depth"] = String(options.depth);
   if (options.excludeNodeTypes?.length) params["excludeNodeTypes"] = options.excludeNodeTypes.join(",");
   if (options.nodeTypes?.length) params["nodeTypes"] = options.nodeTypes.join(",");
+  if (options.includeMetadata) params["includeMetadata"] = "true";
 
   const path = nodePath.startsWith("/") ? nodePath : `/${nodePath}`;
   return apiFetch<MagnoliaNode>(`/nodes/v1/${WORKSPACE}${path}`, params);
@@ -31,8 +35,13 @@ function collectComponents(node: MagnoliaNode, result: MagnoliaNode[]): void {
 }
 
 export async function getComponents(nodePath: string): Promise<MagnoliaNode[]> {
-  const node = await getNode(nodePath, { depth: 10 });
+  const node = await getNode(nodePath, { depth: 10, includeMetadata: true });
   const result: MagnoliaNode[] = [];
   collectComponents(node, result);
   return result;
+}
+
+export async function getPageSchema(nodePath: string): Promise<PageSchema> {
+  const node = await getNode(nodePath, { depth: 10, includeMetadata: true });
+  return buildPageSchema(node);
 }
