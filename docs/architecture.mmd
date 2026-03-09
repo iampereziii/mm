@@ -1,0 +1,48 @@
+flowchart TD
+    subgraph CLI["CLI Entry — src/index.ts"]
+        CMD{command}
+        CMD -->|get| GET["getNode(path, depth)\n→ stdout JSON"]
+        CMD -->|list| LIST["getChildren(path)\n→ stdout list"]
+        CMD -->|print| PRINT["getNode(path, depth)\n→ stdout tree"]
+        CMD -->|schema| SCHEMA["getPageSchema(path)\n→ schema.json"]
+        CMD -->|components| COMP["getComponents(path)\n→ response.json"]
+    end
+
+    subgraph API["API Layer — src/api/"]
+        CLIENT["client.ts\napiFetch&lt;T&gt;(path, params)\n─────────────────\nBuilds URL\nAdds Basic Auth\nLogs request\nThrows on error"]
+        NODES["nodes.ts\n─────────────────\ngetNode()\ngetChildren()\ngetComponents()\ngetPageSchema()"]
+    end
+
+    subgraph Transform["Transform — src/schema.ts"]
+        BUILD["buildPageSchema(pageNode)\n─────────────────\nbuildPageSchema()\ntransformArea()\ntransformComponent()\nserializeContentNode()\nextractProperties()\nfilters system props"]
+    end
+
+    subgraph Config["src/config.ts"]
+        ENV["Reads .env via --env-file\n─────────────────\nMAGNOLIA_BASE_URL\nMAGNOLIA_USERNAME\nMAGNOLIA_PASSWORD\nMAGNOLIA_INSTANCE_PATH"]
+    end
+
+    subgraph Types["src/types/"]
+        MT["magnolia.ts\nMagnoliaNode\nNodeProperty\nPropertyType"]
+        ST["schema.ts\nPageSchema\nAreaSchema\nComponentSchema\nContentNodeSchema"]
+    end
+
+    subgraph Output["Output Files"]
+        RJ["response.json\nFlat list of all\nmgnl:component nodes"]
+        SJ["schema.json\nHierarchical page tree\nby area → component\nwith template + props"]
+    end
+
+    subgraph MagnoliaAPI["Magnolia REST API"]
+        MAPI["GET /nodes/v1/website/{path}\n?depth=N\n&includeMetadata=true"]
+    end
+
+    GET & LIST & PRINT & SCHEMA & COMP --> NODES
+    NODES --> CLIENT
+    CLIENT --> CONFIG_USE(("uses"))
+    CONFIG_USE --> ENV
+    CLIENT --> MAPI
+    MAPI --> CLIENT
+    NODES --> BUILD
+    BUILD --> ST
+    NODES --> MT
+    COMP --> RJ
+    SCHEMA --> SJ

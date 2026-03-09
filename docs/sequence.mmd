@@ -1,0 +1,43 @@
+sequenceDiagram
+    actor User
+    participant CLI as index.ts
+    participant Config as config.ts
+    participant Nodes as api/nodes.ts
+    participant Client as api/client.ts
+    participant Magnolia as Magnolia REST API
+    participant Schema as schema.ts
+    participant FS as File System
+
+    User->>CLI: npm run dev -- schema /page/path
+
+    CLI->>Config: import config
+    Config-->>CLI: { baseUrl, username, password, instancePath }
+
+    CLI->>Nodes: getPageSchema("/page/path")
+    Nodes->>Client: apiFetch("/nodes/v1/website/page/path", { depth:10, includeMetadata:true })
+
+    Client->>Client: build URL + Basic Auth header
+    Client->>Magnolia: GET /local/.rest/nodes/v1/website/page/path?depth=10&includeMetadata=true
+    note over Client,Magnolia: console.error("--> url") logged to stderr
+
+    alt HTTP 200
+        Magnolia-->>Client: MagnoliaNode JSON tree
+        Client-->>Nodes: MagnoliaNode (page root)
+
+        Nodes->>Schema: buildPageSchema(pageNode)
+        note over Schema: Walk page.nodes (mgnl:area children)<br/>For each area → transformArea()<br/>For each mgnl:component → transformComponent()<br/>  extract template (mgnl:template)<br/>  extract properties (skip jcr:*, mgnl:audit)<br/>  recurse mgnl:area children → areas{}<br/>  collect mgnl:contentNode children → contentNodes{}
+
+        Schema-->>Nodes: PageSchema { sourcePath, exportedAt, areas }
+        Nodes-->>CLI: PageSchema
+
+        CLI->>FS: writeFile("schema.json", json)
+        FS-->>CLI: done
+        CLI->>User: stderr: "Wrote schema with N areas, N components"
+
+    else HTTP 4xx / 5xx
+        Magnolia-->>Client: error response
+        Client-->>CLI: throws Error("Magnolia API error 404: ...")
+        CLI->>User: stderr: error message + process.exit(1)
+    end
+
+    note over User,FS: Same flow for other commands:<br/>get / list / print → stdout<br/>components → response.json (flat mgnl:component list)
