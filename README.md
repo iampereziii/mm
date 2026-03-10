@@ -54,6 +54,8 @@ npm start -- <command> [path] [options]
 | `get <path> [depth]` | Fetch a node as JSON (default depth: 0) |
 | `list <path>` | List immediate children of a node |
 | `print <path> [depth]` | Pretty-print the node tree (default depth: 1) |
+| `schema <path>` | Extract hierarchical page schema (areas → components → props) → `schema.json` |
+| `components <path>` | List all `mgnl:component` nodes on a page → `response.json` |
 
 ### Examples
 
@@ -63,10 +65,15 @@ npm run dev -- list /
 
 # Get a node as JSON with depth 2
 npm run dev -- get /website 2
-#  npm run dev -- get /enterogermina-gold-br/pt-br/saude-intestinal/flora-intestinal/bacterias-boas
 
 # Pretty-print a node tree
 npm run dev -- print /website/home
+
+# Extract page schema
+npm run dev -- schema /website/home
+
+# List all components on a page
+npm run dev -- components /website/home
 ```
 
 ## Install as global CLI (optional)
