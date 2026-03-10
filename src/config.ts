@@ -9,4 +9,8 @@ export const config = {
   username: required("MAGNOLIA_USERNAME"),
   password: required("MAGNOLIA_PASSWORD"),
   instancePath: required("MAGNOLIA_INSTANCE_PATH"),
+  targetBaseUrl: process.env["MAGNOLIA_TARGET_BASE_URL"],
+  targetUsername: process.env["MAGNOLIA_TARGET_USERNAME"],
+  targetPassword: process.env["MAGNOLIA_TARGET_PASSWORD"],
+  targetInstancePath: process.env["MAGNOLIA_TARGET_INSTANCE_PATH"],
 } as const;

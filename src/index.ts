@@ -1,6 +1,9 @@
-import { writeFile } from "node:fs/promises";
+import { writeFile, readFile } from "node:fs/promises";
 import { getNode, getChildren, getComponents, getPageSchema } from "./api/nodes.js";
+import { migratePage } from "./api/migrate.js";
 import type { MagnoliaNode } from "./types/magnolia.js";
+import type { PageSchema } from "./types/schema.js";
+import type { MigrationConfig } from "./types/migration.js";
 
 const [, , command, nodePath = "/", ...rest] = process.argv;
 
@@ -52,6 +55,17 @@ async function main(): Promise<void> {
       console.error(`Wrote ${components.length} components to response.json`);
       break;
     }
+    case "migrate": {
+      const schemaFile = rest[0] ?? "schema.json";
+      const migrationFile = rest[1] ?? "migration.json";
+      const schemaRaw = await readFile(schemaFile, "utf-8");
+      const migrationRaw = await readFile(migrationFile, "utf-8");
+      const schema = JSON.parse(schemaRaw) as PageSchema;
+      const migrationConfig = JSON.parse(migrationRaw) as MigrationConfig;
+      await migratePage(schema, migrationConfig);
+      console.error(`Migration complete: ${schema.sourcePath}`);
+      break;
+    }
     default:
       console.log(`Usage:
   mm get        <path> [depth]   Fetch node as JSON (default depth 0)
@@ -59,12 +73,18 @@ async function main(): Promise<void> {
   mm print      <path> [depth]   Pretty-print node tree (default depth 1)
   mm schema     <path>           Export page as recreatable schema (writes to schema.json)
   mm components <path>           List all mgnl:component nodes on a page (writes to response.json)
+  mm migrate    [schema.json] [migration.json]
+                                 Recreate page from schema on target instance
 
 Environment variables (.env):
-  MAGNOLIA_BASE_URL       e.g. http://localhost:8080
+  MAGNOLIA_BASE_URL              e.g. http://localhost:8080
   MAGNOLIA_USERNAME
   MAGNOLIA_PASSWORD
   MAGNOLIA_INSTANCE_PATH
+  MAGNOLIA_TARGET_BASE_URL       Target instance for migrate command
+  MAGNOLIA_TARGET_USERNAME
+  MAGNOLIA_TARGET_PASSWORD
+  MAGNOLIA_TARGET_INSTANCE_PATH
 `);
   }
 }

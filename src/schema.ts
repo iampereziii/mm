@@ -90,6 +90,8 @@ export function buildPageSchema(pageNode: MagnoliaNode): PageSchema {
   return {
     sourcePath: pageNode.path,
     exportedAt: new Date().toISOString(),
+    pageTemplate: getTemplate(pageNode),
+    pageProperties: extractProperties(pageNode),
     areas,
   };
 }

@@ -19,5 +19,7 @@ export interface AreaSchema {
 export interface PageSchema {
   sourcePath: string;
   exportedAt: string;
+  pageTemplate: string;
+  pageProperties: Record<string, string | string[]>;
   areas: Record<string, AreaSchema>;
 }

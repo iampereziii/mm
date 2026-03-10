@@ -1,0 +1,14 @@
+{
+  "pageTemplate": "opella-lm-templates:opella/pages/articleDetail/articleDetail",
+  "targetParentPath": "/enterogermina/pt-br/saude-intestinal/flora-intestinal",
+  "componentTemplates": {
+    "sanofi-lm-platform:components/sanofi-platform/enhancedBanner/enhancedBanner": "opella-lm-templates:global/components/hero/heroBanner/heroBanner",
+    "sanofi-lm-platform:components/sanofi-platform/contentGrid/contentGrid": "opella-lm-templates:global/components/main/sections/column/column",
+    "sanofi-lm-platform:components/sanofi-platform/contentGrid/contentGridNested": "opella-lm-templates:global/components/main/sections/column/column",
+    "sanofi-lm-platform:components/sanofi-platform/contentBlock/contentBlock": "opella-lm-templates:global/components/main/sections/contentBlock/contentBlock",
+    "sanofi-lm-platform:components/sanofi-platform/accordions/accordions": "opella-lm-templates:global/components/main/sections/accordions/accordions",
+    "sanofi-lm-platform:components/sanofi-platform/accordion/accordion": "opella-lm-templates:global/components/main/sections/accordions/accordion",
+    "sanofi-lm-platform:components/sanofi-platform/image/image": "opella-lm-templates:global/components/main/sections/image/image",
+    "sanofi-lm-platform:components/sanofi-platform/quicklinks/quicklinksV2": "opella-lm-templates:global/components/pageMenu/anchorTab/anchorTab"
+  }
+}
