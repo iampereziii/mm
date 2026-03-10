@@ -6,11 +6,14 @@ flowchart TD
         CMD -->|print| PRINT["getNode(path, depth)\n→ stdout tree"]
         CMD -->|schema| SCHEMA["getPageSchema(path)\n→ schema.json"]
         CMD -->|components| COMP["getComponents(path)\n→ response.json"]
+        CMD -->|migrate| MIGRATE["migratePage(schema, migrationConfig)\n← schema.json + migration.json"]
     end
 
     subgraph API["API Layer — src/api/"]
         CLIENT["client.ts\napiFetch&lt;T&gt;(path, params)\n─────────────────\nBuilds URL\nAdds Basic Auth\nLogs request\nThrows on error"]
         NODES["nodes.ts\n─────────────────\ngetNode()\ngetChildren()\ngetComponents()\ngetPageSchema()"]
+        TCLIENT["target-client.ts\ntargetApiFetch&lt;T&gt;(path, method, body)\n─────────────────\nBuilds URL (.rest-v2)\nAdds Basic Auth\nLogs request\nThrows on error"]
+        MIGRATEAPI["migrate.ts\n─────────────────\nmigratePage()\ncreateArea()\ncreateComponent()\ncreateContentNodes()\npostNode()"]
     end
 
     subgraph Transform["Transform — src/schema.ts"]
@@ -18,21 +21,30 @@ flowchart TD
     end
 
     subgraph Config["src/config.ts"]
-        ENV["Reads .env via --env-file\n─────────────────\nMAGNOLIA_BASE_URL\nMAGNOLIA_USERNAME\nMAGNOLIA_PASSWORD\nMAGNOLIA_INSTANCE_PATH"]
+        ENV["Reads .env via --env-file\n─────────────────\nMAGNOLIA_BASE_URL\nMAGNOLIA_USERNAME\nMAGNOLIA_PASSWORD\nMAGNOLIA_INSTANCE_PATH\nMAGNOLIA_TARGET_BASE_URL\nMAGNOLIA_TARGET_USERNAME\nMAGNOLIA_TARGET_PASSWORD\nMAGNOLIA_TARGET_INSTANCE_PATH"]
     end
 
     subgraph Types["src/types/"]
         MT["magnolia.ts\nMagnoliaNode\nNodeProperty\nPropertyType"]
         ST["schema.ts\nPageSchema\nAreaSchema\nComponentSchema\nContentNodeSchema"]
+        MGT["migration.ts\nMigrationConfig\n─────────────────\npageTemplate\ncomponentTemplates\ntargetParentPath?"]
+    end
+
+    subgraph InputFiles["Input Files"]
+        SJ["schema.json\nHierarchical page tree\nby area → component\nwith template + props"]
+        MJ["migration.json\nTemplate mappings\nsource → target\n+ optional targetParentPath"]
     end
 
     subgraph Output["Output Files"]
         RJ["response.json\nFlat list of all\nmgnl:component nodes"]
-        SJ["schema.json\nHierarchical page tree\nby area → component\nwith template + props"]
     end
 
-    subgraph MagnoliaAPI["Magnolia REST API"]
+    subgraph MagnoliaAPI["Source — Magnolia REST API (.rest)"]
         MAPI["GET /nodes/v1/website/{path}\n?depth=N\n&includeMetadata=true"]
+    end
+
+    subgraph TargetAPI["Target — Magnolia REST API (.rest-v2)"]
+        TAPI["POST /nodes/v1/website/{parentPath}\nbody: { name, type, properties }"]
     end
 
     GET & LIST & PRINT & SCHEMA & COMP --> NODES
@@ -46,3 +58,11 @@ flowchart TD
     NODES --> MT
     COMP --> RJ
     SCHEMA --> SJ
+
+    MIGRATE --> MIGRATEAPI
+    MIGRATEAPI --> SJ
+    MIGRATEAPI --> MJ
+    MJ --> MGT
+    MIGRATEAPI --> TCLIENT
+    TCLIENT --> CONFIG_USE
+    TCLIENT --> TAPI

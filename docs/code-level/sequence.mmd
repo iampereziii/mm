@@ -4,9 +4,12 @@ sequenceDiagram
     participant Config as config.ts
     participant Nodes as api/nodes.ts
     participant Client as api/client.ts
-    participant Magnolia as Magnolia REST API
+    participant Magnolia as Source Magnolia (.rest)
     participant Schema as schema.ts
     participant FS as File System
+    participant MigrateAPI as api/migrate.ts
+    participant TargetClient as api/target-client.ts
+    participant Target as Target Magnolia (.rest-v2)
 
     User->>CLI: npm run dev -- schema /page/path
 
@@ -41,3 +44,41 @@ sequenceDiagram
     end
 
     note over User,FS: Same flow for other commands:<br/>get / list / print → stdout<br/>components → response.json (flat mgnl:component list)
+
+    User->>CLI: npm run dev -- migrate [schema.json] [migration.json]
+
+    CLI->>FS: readFile("schema.json") + readFile("migration.json")
+    FS-->>CLI: PageSchema + MigrationConfig
+
+    CLI->>MigrateAPI: migratePage(schema, migrationConfig)
+    note over MigrateAPI: Resolve parentPath:<br/>migrationConfig.targetParentPath ?? sourcePath parent
+
+    MigrateAPI->>TargetClient: POST /nodes/v1/website/{parentPath}
+    note over MigrateAPI,TargetClient: body: { name, type: "mgnl:page", properties + mgnl:template }
+    TargetClient->>Target: POST .rest-v2/nodes/v1/website/{parentPath}
+
+    alt HTTP 2xx
+        Target-->>TargetClient: created
+        loop for each area
+            MigrateAPI->>TargetClient: POST /nodes/v1/website/{pagePath}
+            note over MigrateAPI,TargetClient: body: { name, type: "mgnl:area" }
+            TargetClient->>Target: POST area node
+            loop for each component
+                MigrateAPI->>TargetClient: POST /nodes/v1/website/{areaPath}
+                note over MigrateAPI,TargetClient: body: { name, type: "mgnl:component", properties + mgnl:template }<br/>Unmapped templates are skipped with a warning
+                TargetClient->>Target: POST component node
+                opt has contentNodes
+                    MigrateAPI->>TargetClient: POST mgnl:contentNode children recursively
+                end
+                opt has nested areas
+                    MigrateAPI->>TargetClient: POST nested area + component nodes recursively
+                end
+            end
+        end
+        MigrateAPI-->>CLI: done
+        CLI->>User: stderr: "Migration complete: /page/path"
+    else HTTP 4xx / 5xx
+        Target-->>TargetClient: error response
+        TargetClient-->>CLI: throws Error("Target API error ...")
+        CLI->>User: stderr: error message + process.exit(1)
+    end
